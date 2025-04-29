@@ -98,7 +98,7 @@ func NewABLeMHFromConfig(ctx context.Context, other map[string]interface{}) (api
 	return NewABLeMH(ctx, cc.URI, cc.Device, cc.Comset, cc.Baudrate, cc.Protocol(), cc.ID, cc.Timeout)
 }
 
-//go:generate go tool decorate -f decorateABLeMH -b *ABLeMH -r api.Charger -t "api.Meter,CurrentPower,func() (float64, error)" -t "api.PhaseCurrents,Currents,PhaseSwitcher,func() (float64, float64, float64, error)" -t "api.PhaseSwitcher,phases1p3p,func(int) error"
+//go:generate go tool decorate -f decorateABLeMH -b *ABLeMH -r api.Charger -t "api.Meter,CurrentPower,func() (float64, error)" -t "api.PhaseCurrents,Currents,func() (float64, float64, float64, error)" -t "api.PhaseSwitcher,phases1p3p,func(int) error"
 
 // NewABLeMH creates ABLeMH charger
 func NewABLeMH(ctx context.Context, uri, device, comset string, baudrate int, proto modbus.Protocol, slaveID uint8, timeout time.Duration) (api.Charger, error) {
