@@ -125,7 +125,7 @@ func NewABLeMH(ctx context.Context, uri, device, comset string, baudrate int, pr
 
 	// Detect phase switch
 	var phases1p3p func(int) error
-	b, err = wb.get(ablRegSwitch, 1)
+	b, err := wb.get(ablRegSwitch, 1)
 	if err == nil {
 		phases := binary.BigEndian.Uint16(b)
 		if phases == 3 || phases == 1 {
@@ -134,7 +134,7 @@ func NewABLeMH(ctx context.Context, uri, device, comset string, baudrate int, pr
 		}
 	}
 
-	b, err := wb.get(ablRegFirmware, 2)
+	b, err = wb.get(ablRegFirmware, 2)
 
     // Check presence of current sensor
     if err == nil && (b[3]&ablSensorPresent != 0) {
