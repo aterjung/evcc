@@ -94,14 +94,14 @@ func NewABLeMHFromConfig(ctx context.Context, other map[string]interface{}) (api
 		return nil, err
 	}
 
-	return NewABLeMH(ctx, cc.URI, cc.Device, cc.Comset, cc.Baudrate, cc.ID, cc.Timeout)
+	return NewABLeMH(ctx, cc.URI, cc.Device, cc.Comset, cc.Baudrate, cc.Protocol(), cc.ID, cc.Timeout)
 }
 
 //go:generate go tool decorate -f decorateABLeMH -b *ABLeMH -r api.Charger -t "api.Meter,CurrentPower,func() (float64, error)" -t "api.PhaseCurrents,Currents,func() (float64, float64, float64, error)"
 
 // NewABLeMH creates ABLeMH charger
-func NewABLeMH(ctx context.Context, uri, device, comset string, baudrate int, slaveID uint8, timeout time.Duration) (api.Charger, error) {
-	conn, err := modbus.NewConnection(ctx, uri, device, comset, baudrate, modbus.Ascii, slaveID)
+func NewABLeMH(ctx context.Context, uri, device, comset string, baudrate int, proto modbus.Protocol, slaveID uint8, timeout time.Duration) (api.Charger, error) {
+	conn, err := modbus.NewConnection(ctx, uri, device, comset, baudrate, proto, slaveID)
 	if err != nil {
 		return nil, err
 	}
