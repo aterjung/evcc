@@ -37,6 +37,7 @@ type ABLeMH struct {
 }
 
 const (
+	ablRegSwitch      = 0x36   // Input - Holding if external phase switch installed
 	ablRegFirmware    = 0x01
 	ablRegStatus      = 0x04
 	ablRegModifyState = 0x05
@@ -97,7 +98,8 @@ func NewABLeMHFromConfig(ctx context.Context, other map[string]interface{}) (api
 	return NewABLeMH(ctx, cc.URI, cc.Device, cc.Comset, cc.Baudrate, cc.Protocol(), cc.ID, cc.Timeout)
 }
 
-//go:generate go tool decorate -f decorateABLeMH -b *ABLeMH -r api.Charger -t "api.Meter,CurrentPower,func() (float64, error)" -t "api.PhaseCurrents,Currents,func() (float64, float64, float64, error)"
+//go:generate go tool decorate -f decorateABLeMH -b *ABLeMH -r api.Charger -t "api.Meter,CurrentPower,func() (float64, error)" -t "api.PhaseCurrents,Currents,PhaseSwitcher,Phases1p3p,func() (float64, float64, float64, error)"
+
 
 // NewABLeMH creates ABLeMH charger
 func NewABLeMH(ctx context.Context, uri, device, comset string, baudrate int, proto modbus.Protocol, slaveID uint8, timeout time.Duration) (api.Charger, error) {
@@ -124,10 +126,21 @@ func NewABLeMH(ctx context.Context, uri, device, comset string, baudrate int, pr
 
 	b, err := wb.get(ablRegFirmware, 2)
 
-	// check presence of current sensor
-	if err == nil && (b[3]&ablSensorPresent != 0) {
-		return decorateABLeMH(wb, wb.currentPower, wb.currents), nil
+	// Detect phase switch
+	var phases1p3p func(int) error
+	b, err = wb.get(ablRegSwitch, 1)
+	if err == nil {
+		phases := binary.BigEndian.Uint16(b)
+		if phases == 3 || phases == 1 {
+			log.DEBUG.Println("detected phase switch")
+			phases1p3p = wb.phases1p3p
+		}
 	}
+
+    // Check presence of current sensor
+    if err == nil && (b[3]&ablSensorPresent != 0) {
+        return decorateABLeMH(wb, wb.currentPower, wb.currents, phases1p3p), nil
+    }
 
 	return wb, err
 }
@@ -273,5 +286,12 @@ func (wb *ABLeMH) WakeUp() error {
 		err = wb.set(ablRegModifyState, 0xA1A1)
 	}
 
+	return err
+}
+
+
+ // phases1p3p implements the api.PhaseSwitcher interface
+ func (wb *ABLeMH) phases1p3p(phases int) error {
+	_, err := wb.conn.WriteMultipleRegisters(ablRegSwitch, 1, uint16(phases))
 	return err
 }
